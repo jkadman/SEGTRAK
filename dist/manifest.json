@@ -1,9 +1,9 @@
 {
-  "name": "Combat Master - Segment Tracker",
+  "name": "Hello, World!",
   "version": "1.0.0",
   "manifest_version": 1,
   "action": {
-    "title": "Segment Tracker",
+    "title": "Hello, World!",
     "icon": "/icon.svg",
     "popover": "/",
     "height": 600,

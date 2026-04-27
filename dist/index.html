@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Combat Master | OSRIC & AD&D 1e</title>
+    <style>
+        :root { --bg: #121212; --panel: #1e1e1e; --gold: #d4af37; --red: #8b0000; --green: #2ecc71; --text: #e0e0e0; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
+        .container { max-width: 1500px; margin: auto; }
+        h2 { text-align: center; color: var(--gold); text-transform: uppercase; margin: 0 0 15px 0; border-bottom: 2px solid var(--gold); padding-bottom: 5px; }
+        .panel { background: var(--panel); padding: 10px; border-radius: 6px; border: 1px solid #333; margin-bottom: 10px; }
+        h3 { margin: 0 0 5px 0; font-size: 0.8em; color: var(--gold); text-transform: uppercase; }
+        .grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 15px; margin-bottom: 15px; }
+        .num-input { width: 40px; background: #333; color: #fff; border: 1px solid var(--gold); border-radius: 4px; padding: 3px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; background: #1a1a1a; table-layout: fixed; }
+        th { background: var(--red); color: white; padding: 8px; font-size: 0.75em; text-transform: uppercase; }
+        td { padding: 6px; border-bottom: 1px solid #333; text-align: center; vertical-align: top; }
+        input, select { background: #2a2a2a; color: #fff; border: 1px solid #444; padding: 4px; border-radius: 4px; width: 98%; font-size: 0.82em; }
+        .active-row { background: rgba(212, 175, 55, 0.2) !important; outline: 1px solid var(--gold); }
+        .party-row { border-left: 5px solid var(--green); }
+        .npc-row { border-left: 5px solid #e74c3c; }
+        .btn { padding: 8px 14px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.7em; transition: 0.2s; }
+        .btn:hover { filter: brightness(1.2); }
+        .cur-seg { font-size: 1.1em; font-weight: bold; color: var(--gold); min-width: 200px; text-align: center; }
+        .status-detail { font-size: 0.65em; color: #ffeb3b; margin-top: 4px; text-align: left; line-height: 1.2; font-style: italic; min-height: 1.2em; border-left: 2px solid #444; padding-left: 4px; }
+        .clr-btn { background: #444; color: white; border: none; padding: 2px 5px; cursor: pointer; border-radius: 3px; font-size: 0.6em; margin-left: 5px; }
+        .action-bar { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Combat Master</h2>
+
+    <div class="grid">
+        <div class="panel">
+            <h3>Surprise (d6)</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    Party: <input type="number" id="sA" class="num-input" value="6" oninput="doSurp()"> 
+                    Mod: <input type="number" id="mA" class="num-input" value="0" oninput="doSurp()">
+                    <select id="rA" onchange="doSurp()" style="width: auto; font-size: 0.7em;">
+                        <option value="2">Std(1-2)</option><option value="3">E/R(1-3)</option>
+                    </select>
+                    <span id="outA" style="font-weight:bold; font-size:0.8em; margin-left:5px;"></span>
+                </div>
+                <div>
+                    NPC: <input type="number" id="sB" class="num-input" value="6" oninput="doSurp()"> 
+                    Mod: <input type="number" id="mB" class="num-input" value="0" oninput="doSurp()">
+                    <select id="rB" onchange="doSurp()" style="width: auto; font-size: 0.7em;">
+                        <option value="2">Std(1-2)</option><option value="3">Hi(1-3)</option><option value="4">Ex(1-4)</option>
+                    </select>
+                    <span id="outB" style="font-weight:bold; font-size:0.8em; margin-left:5px;"></span>
+                </div>
+            </div>
+        </div>
+        <div class="panel">
+            <h3>Initiative (1-6)</h3>
+            <div style="display: flex; justify-content: space-around;">
+                <div>Party: <input type="number" id="iA" class="num-input" value="1" oninput="upAll()"></div>
+                <div>NPC: <input type="number" id="iB" class="num-input" value="1" oninput="upAll()"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <div style="background: #000; border: 1px solid var(--gold); padding: 5px 15px; border-radius: 5px; display: flex; align-items: center; gap: 10px;">
+            <button class="btn" style="background:var(--red); color:white;" onclick="newRound()">New RD</button>
+            <button class="btn" style="background:#2980b9; color:white;" onclick="changeSeg(-1)">-</button>
+            <div class="cur-seg">RD <span id="roundD">1</span> | SEG <span id="segD">0</span></div>
+            <button class="btn" style="background:#2980b9; color:white;" onclick="changeSeg(1)">+</button>
+        </div>
+        <button class="btn" style="background:var(--green); color:white;" onclick="addRow('A')">+ Add PC</button>
+        <button class="btn" style="background:#e67e22; color:white;" onclick="addRow('B')">+ Add NPC</button>
+        <button class="btn" style="background:#c0392b; color:white;" onclick="clearNPCs()">Reset All NPCs</button>
+        <button class="btn" style="background:#555; color:white;" onclick="clearAll()">Reset Full Table</button>
+    </div>
+
+    <table id="cTable">
+        <thead>
+            <tr>
+                <th width="45px">Side</th>
+                <th width="140px">Name</th>
+                <th width="160px">Declaration</th>
+                <th width="140px">RoF / Mode</th>
+                <th width="50px">Mod</th>
+                <th>Status / Rules</th>
+                <th width="120px">Result / HP</th>
+                <th width="35px"></th>
+            </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+    </table>
+</div>
+
+<script>
+    let currentSeg = 0, currentRound = 1;
+
+    const codex = {
+        "Normal": "",
+        "Blinded": "-4 Hit/Saves, +4 AC penalty.",
+        "Confused": "Roll behavior (d100) per RD.",
+        "Dead": "No actions. RIP.",
+        "Deafened": "Cannot hear. Spell failure check?",
+        "Engaged": "10' rad. Entry ends mov. Exiting = free attack.",
+        "Ethereal": "Invis/Pass through. Immune to Material.",
+        "Grappled": "No spells/fend. Dagger/natural only.",
+        "Invisible": "-4 to hit. +4 Saves. No flank/rear.",
+        "Overborne": "Cannot rise until attacker dies/leaves.",
+        "Prone": "No attacks. +4 for attackers to hit you.",
+        "Sleep (M)": "Helpless. Auto-kill. Max dmg. 2x Atk vs you.",
+        "Sleep (N)": "Asn kill roll. No Dex/Shield. +4 hit.",
+        "Staggered": "+2 for attackers to hit victim.",
+        "Stunned": "No act/Shield/Dex. +4 for attackers.",
+        "Unconscious": "Helpless. Magical Sleep rules apply."
+    };
+
+    window.onload = () => { doSurp(); addRow('A'); };
+
+    function updateStatus(el) {
+        const td = el.closest('td');
+        const detailDiv = td.querySelector('.status-detail');
+        detailDiv.innerText = codex[el.value] || "";
+    }
+    
+    function clearStatus(btn) {
+        const td = btn.closest('td');
+        const sel = td.querySelector('select');
+        const detail = td.querySelector('.status-detail');
+        sel.value = "Normal";
+        detail.innerText = "";
+    }
+
+    function doSurp() {
+        ['A','B'].forEach(s => {
+            const r = parseInt(document.getElementById('s'+s).value)||6, m = parseInt(document.getElementById('m'+s).value)||0;
+            const t = parseInt(document.getElementById('r'+s).value), out = document.getElementById('out'+s);
+            const isS = (r + m) <= t;
+            out.innerText = isS ? "SURPRISED!" : "READY";
+            out.style.color = isS ? "#e74c3c" : "#2ecc71";
+        });
+    }
+
+    function addRow(side, name = "") {
+        const row = document.getElementById('tBody').insertRow();
+        row.className = side === 'A' ? 'party-row' : 'npc-row';
+        row.dataset.side = side;
+        row.innerHTML = `
+            <td>${side}</td>
+            <td><input type="text" value="${name}" placeholder="Name"></td>
+            <td>
+                <select>
+                    <option>Strike Blows (Melee)</option>
+                    <option>Discharge Missiles</option>
+                    <option>Cast a Spell</option>
+                    <option>Charge / Close</option>
+                    <option>Attempt Parley</option>
+                    <option>Await Action</option>
+                    <option>Avoid / Flee</option>
+                    <option>Use Magic Item</option>
+                    <option>Turn Undead</option>
+                    <option>Set vs Charge</option>
+                </select>
+            </td>
+            <td>
+                <select class="rof-sel" onchange="upAll()">
+                    <option value="1/1">1/1 (Std Melee/Hurled)</option>
+                    <option value="3/2">3/2 (Specialist)</option>
+                    <option value="2/1">2/1 (Bows / Specialist)</option>
+                    <option value="5/2">5/2 (Specialist)</option>
+                    <option value="3/1">3/1 (Darts)</option>
+                    <option value="1/2">1/2 (Heavy X-Bow)</option>
+                </select>
+            </td>
+            <td><input type="number" class="num-input ct-mod" value="0" oninput="upAll()"></td>
+            <td>
+                <div style="display:flex; align-items:center;">
+                    <select onchange="updateStatus(this)">
+                        ${Object.keys(codex).map(k=>`<option value="${k}">${k}</option>`).join('')}
+                    </select>
+                    <button class="clr-btn" onclick="clearStatus(this)">CLR</button>
+                </div>
+                <div class="status-detail"></div>
+            </td>
+            <td><input type="text"></td>
+            <td><button onclick="this.parentElement.parentElement.remove()" style="color:red; background:none; border:none; cursor:pointer; font-weight:bold;">✖</button></td>`;
+        upAll();
+    }
+
+    function calculateAttacks(init, mod, rof) {
+        let segs = [], f = Math.max(1, Math.min(10, init + mod));
+        if(rof==="1/1") segs.push(f);
+        if(rof==="2/1") { segs.push(f); segs.push(Math.min(10, f+5)); }
+        if(rof==="3/1") { segs.push(f); segs.push(Math.min(10, f+3)); segs.push(Math.min(10, f+6)); }
+        if(rof==="3/2") { segs.push(f); if(currentRound%2!==0) segs.push(Math.min(10, f+5)); }
+        if(rof==="1/2") { if(currentRound%2!==0) segs.push(f); }
+        if(rof==="5/2") { 
+            if(currentRound%2!==0) { segs.push(f); segs.push(Math.min(10, f+3)); segs.push(Math.min(10, f+6)); }
+            else { segs.push(f); segs.push(Math.min(10, f+5)); }
+        }
+        return [...new Set(segs)];
+    }
+
+    function upAll() {
+        document.querySelectorAll('#tBody tr').forEach(r => {
+            const i = parseInt(document.getElementById('i'+r.dataset.side).value)||1;
+            const m = parseInt(r.querySelector('.ct-mod').value)||0;
+            const rof = r.querySelector('.rof-sel').value;
+            r.classList.toggle('active-row', calculateAttacks(i, m, rof).includes(currentSeg));
+        });
+    }
+
+    function changeSeg(v) { currentSeg = Math.max(0, Math.min(10, currentSeg+v)); document.getElementById('segD').innerText = currentSeg; upAll(); }
+    
+    function newRound() { 
+        currentSeg = 0; 
+        currentRound++; 
+        document.getElementById('segD').innerText = 0; 
+        document.getElementById('roundD').innerText = currentRound; 
+        upAll(); 
+    }
+
+    function clearNPCs() {
+        const rows = document.querySelectorAll('.npc-row');
+        rows.forEach(r => r.remove());
+    }
+
+    function clearAll() {
+        document.getElementById('tBody').innerHTML = '';
+        currentRound = 1;
+        currentSeg = 0;
+        document.getElementById('roundD').innerText = "1";
+        document.getElementById('segD').innerText = "0";
+    }
+</script>
+</body>
+</html>
